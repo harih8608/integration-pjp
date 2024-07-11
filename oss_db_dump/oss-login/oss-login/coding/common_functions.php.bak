@@ -1,0 +1,348 @@
+<?php
+
+$conn = '';
+
+include 'dbconnect.php';
+
+// ini_set('display_errors', 0);
+// ini_set('display_startup_errors', 0);
+// error_reporting(E_ALL);
+
+$method = $_REQUEST['method'];
+
+  switch ($method) {
+      case "getInfo":
+          getInfo($_REQUEST, $conn);
+          break;
+      case 'getOSStack':
+          getOSStack($_REQUEST, $conn);
+          break;
+      case 'getOSCombo':
+          getOSCombo($_REQUEST, $conn);
+          break;
+      case 'getRemarks':
+          getRemarks($_REQUEST, $conn);
+          break;
+      case 'getfileURL':
+          getfileURL($_REQUEST, $conn);
+          break;
+      case 'matchCaptcha' :
+          matchCaptcha($_REQUEST, $conn);
+          break;
+      case 'searchOSS' :
+          getOssSearch($_REQUEST, $conn);
+          break;
+      case 'getTechStack' :
+          getTechStack($_REQUEST, $conn);
+          break;
+      case 'getSolutionStack' :
+          getSolutionStack($_REQUEST, $conn);
+          break;
+      case 'getFunctionalArea' :
+          getFunctionalArea($_REQUEST, $conn);
+          break;
+      case 'getOSSList' :
+          getOSSList($_REQUEST, $conn);
+          break;
+      case 'getSoftwareList' :
+          getSoftwareList($_REQUEST, $conn);
+          break;
+      case 'getFreeSearchValues' :
+          getFreeSearchValues($_REQUEST, $conn);
+          break;
+	  case 'getToolId' :
+		  getToolId($_REQUEST,$conn);
+		  break;
+	  case 'logentry' :
+		  logentry($_REQUEST, $conn);
+		  break;
+	  case 'logentryshare' :
+		  logentryshare($_REQUEST, $conn);
+		  break;
+	  case 'check_ext_user_emailstatus':
+		  check_ext_user_emailstatus($_REQUEST, $conn);
+		  break;
+      default:
+          getInfo($_REQUEST, $conn);
+  }
+
+  function matchCaptcha($param1) {
+    session_start();
+
+    $sess_captcha = $_SESSION["code"];
+    $captcha_entered = $param1['captcha'];
+
+    if($sess_captcha == $captcha_entered) {
+      echo '1';
+    } else {
+      echo '0';
+    }
+
+  }
+
+  function getOSStack($param1, $conn) {
+
+    $opt_sys_list_query = pg_query($conn, "select id, opt_sys, version from software_stack where status='1' and opt_sys = " . $param1[''] . " and version = " . $param1['version']);
+    $os_list = pg_fetch_all($opt_sys_list_query);
+
+    echo json_encode($os_list);
+  }
+
+  function getOSCombo($param1, $conn) {
+    $os = $param1['os'];
+    $version = str_replace(' ', '', $param1['version']);
+    
+    $opt_sys_combo_query = pg_query($conn, "select id, soft_stack from software_stack where status='1' and soft_stack !='' and opt_sys = '" . $os . "' and version = '" . $version . "'");
+    $os_combo_list = pg_fetch_all($opt_sys_combo_query);
+
+    echo json_encode($os_combo_list);
+  }
+
+  function getRemarks($param1, $conn) {
+
+    $opt_sys_remark_query = pg_query($conn, "select opt_sys, version, details, recom, remarks from software_stack where id='" . $param1['id'] . "'" );
+    $os_remarks = pg_fetch_all($opt_sys_remark_query);
+
+    echo json_encode($os_remarks);
+  }
+
+  function getfileURL($param1, $conn) {
+
+    $os_combo_val = $param1['os_combo'];
+    $os_db = $param1['os_db'];
+
+    $result = array();
+
+    $os_iso_query = pg_query($conn, "select os_temp, cloud_temp from software_stack where id='" . $os_combo_val . "'" );
+    $os_iso = pg_fetch_all($os_iso_query);
+    
+    $os_db_query = pg_query($conn, "select db_cloud_temp, iso_cloud_template from software_stack where id='" . $os_db . "'" );
+    $os_db = pg_fetch_all($os_db_query);
+
+    $result = array_merge($os_iso, $os_db);
+
+    $result_arr = call_user_func_array('array_merge', $result);
+
+    $new_result_array = array();
+    $i = 0;
+
+    foreach ($result_arr as $key => $value) {
+
+      $url     = 'http://10.163.14.91/nic/' . $value;
+      $headers = get_headers($url, true);
+      $size = $headers['Content-Length'];
+      $file_size = getFileSize($size);
+
+      $new_result_array[$i]['name'] = explode("/", $value)[1];
+      $new_result_array[$i]['url'] = $url;
+      $new_result_array[$i]['size'] = $file_size;
+      $i++;
+    }
+    
+    echo json_encode($new_result_array);
+  }
+  
+  function getFileSize($size) {
+    $units = array( 'B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB');
+    $power = $size > 0 ? floor(log($size, 1024)) : 0;
+    return $file_size = number_format($size / pow(1024, $power), 2, '.', ',') . ' ' . $units[$power];
+  }
+
+  function getTechStack($param1, $conn) {
+
+    $tech_stack_query = pg_query($conn, "select * from technology_stack_mst where status='active' order by id ASC");
+    $tech_stack = pg_fetch_all($tech_stack_query);
+
+    echo json_encode($tech_stack);
+  }
+
+  function getSolutionStack($param1, $conn) {
+
+    $sol_stack_query = pg_query($conn, "select * from solution_for_mst where status='active' order by id ASC");
+    $sol_stack = pg_fetch_all($sol_stack_query);
+
+    echo json_encode($sol_stack);
+  }
+
+  function getFunctionalArea($param1, $conn) {
+    $sol_for = $param1['sol_for'];
+
+    $fun_area_query = pg_query($conn, "select * from functional_area_mst where status='active' and solution_for_type in ( " . $sol_for . ") order by id ASC");
+    $fun_area = pg_fetch_all($fun_area_query);
+
+    echo json_encode($fun_area); 
+  }
+
+  function getOSSList($param1, $conn) {
+
+    $sol_for = "'" . str_replace(",", "','", $param1['sol_for']) . "'";
+    $technologies = "'" . str_replace(",", "','", $param1['tech']) . "'";
+    $functional_area = "'" . str_replace(",", "','", $param1['func_area']) . "'";
+
+    $sol_for = $param1['sol_for'];
+    $technologies = $param1['tech'];
+    $functional_area = $param1['func_area'];
+
+    $where_condition_1 = '';
+
+    $sol_for_arr = array_filter(explode(',', $sol_for));
+    $technologies_arr = array_filter(explode(',', $technologies));
+    $functional_area_arr = array_filter(explode(',', $functional_area));
+
+    foreach ($technologies_arr as $key => $value) {
+      if($where_condition_1 == '' || $where_condition_1 == NULL) {
+        $where_condition_1 .= " stack_json->>'" . $value . "' = '1'";
+      } else {
+        $where_condition_1 .= " or stack_json->>'" . $value . "' = '1'";
+      }
+    }
+
+    $where_condition_conjection_1 = '';
+    $where_condition_2 = '';
+
+    if($where_condition_1 == '' || $where_condition_1 == NULL) {
+      $where_condition_conjection_1 = '';
+
+    } else {
+      $where_condition_1 = "(" . $where_condition_1 . ")";
+      
+      if($sol_for_arr != '' && $sol_for_arr != NULL) {
+        
+        $where_condition_conjection_1 = ' and ';
+
+        foreach ($sol_for_arr as $key => $value) {
+          if($where_condition_2 == '' || $where_condition_2 == NULL) {
+            $where_condition_2 .= " stack_json->>'" . $value . "' = '1'";
+          } else {
+            $where_condition_2 .= " or stack_json->>'" . $value . "' = '1'";
+          }
+        }
+
+      }
+
+    }
+
+    $where_condition_conjection_2 = '';
+    $where_condition_3 = '';
+
+    if($where_condition_2 == '' || $where_condition_2 == NULL) {
+      $where_condition_conjection_2 = '';
+
+    } else {
+      $where_condition_2 = "(" . $where_condition_2 . ")";
+
+      if($functional_area_arr != '' && $functional_area_arr != NULL) {
+        
+        $where_condition_conjection_2 = ' and ';
+
+        foreach ($functional_area_arr as $key => $value) {
+          if($where_condition_3 == '' || $where_condition_3 == NULL) {
+            $where_condition_3 .= " stack_json->>'" . $value . "' = '1'";
+          } else {
+            $where_condition_3 .= " or stack_json->>'" . $value . "' = '1'";
+          }
+        }
+      }
+    }
+
+    if($where_condition_2 != '' && $where_condition_2 != NULL && $where_condition_3 != '' && $where_condition_3 != NULL) {
+      $where_condition_3 = "(" . $where_condition_3 . ")";
+    }
+
+    $final_query_condition = $where_condition_1 . $where_condition_conjection_1 . $where_condition_2 . $where_condition_conjection_2 . $where_condition_3;
+
+
+    $oss_stack_query = pg_query($conn, "select * from oss_stack_mst_json_new where " . $final_query_condition);
+    $oss_stack = pg_fetch_all($oss_stack_query);
+
+    echo json_encode($oss_stack);
+  }
+
+  function getSoftwareList($param1, $conn) {
+
+    $oss_software_list_query = pg_query($conn, "select name from oss_stack_mst_json_new");
+    $oss_software_list = pg_fetch_all($oss_software_list_query);
+
+    $oss_software_array = [];
+    foreach ($oss_software_list as $key => $value) {
+      array_push($oss_software_array, $value['name']);
+    }
+
+    $oss_software_list_string = implode(',', $oss_software_array);
+
+    echo $oss_software_list_string;
+
+  }
+
+  function getFreeSearchValues($param1, $conn) {
+
+    $search_key =  strtolower($param1['search_key']);
+
+    $oss_software_list_query = pg_query($conn, "select * from oss_stack_mst_json_new where LOWER(name) like '%$search_key%'");
+    $oss_software_list = pg_fetch_all($oss_software_list_query);
+
+    echo json_encode($oss_software_list);
+
+  }
+  
+  function getToolId($param1,$conn)
+  {
+	  $tname = $param1['toolname'];
+	  $gettid = "select tool_id from oss_stack.mas_stack_tools where tool_name='$tname'";
+	  $gettidres = pg_query($conn,$gettid);
+	  $tidres =  pg_fetch_all($gettidres);
+	  //$fb_trnid =  pg_fetch_result($gettidres, 0, 0);
+	  if($gettidres)
+	  {
+		$tidval = $tidres[0]['tool_id'];
+		echo $tidval;
+	  }
+	  else
+	  {
+		  echo "Tool Id Fetch error";
+	  }
+  }
+  
+  function logentry($param1,$conn)
+  {
+
+	  //global $dbcon;
+	  $userid = $param1['userid'];
+
+
+		//$userid= $_POST['userid'];
+		//$roleid= $_POST['roleid'];
+		$serviceid= $param1['serviceid'];
+		$refurl= $param1['refurl'];
+		$srcref= $param1['srcref'];//W(web) or C(chatbot)
+		$logqry = "insert into oss_portal.trn_log (user_id,service_id,refe,log_date_time,source_ref) values('$userid','$serviceid','$refurl',now(),'$srcref')"; 
+		$loginsert = pg_query($conn,$logqry);
+		
+		if($loginsert)
+		{
+			echo "true";
+		}
+		else
+		{	echo "false";}
+  }
+  function logentryshare($param1,$conn)
+  {
+	  //global $dbcon;
+	  $userid = $param1['userid'];
+		//$userid= $_POST['userid'];
+		//$roleid= $_POST['roleid'];
+		$serviceid= $param1['serviceid'];
+		$tid = $param1['toolid'];
+		$refurl= $param1['refurl'];
+		$srcref= $param1['srcref'];//W(web) or C(chatbot)
+		$logqry = "insert into oss_portal.trn_log (user_id,service_id,tool_id,refe,log_date_time,source_ref) values('$userid','$serviceid','$tid','$refurl',now(),'$srcref')"; 
+		$loginsert = pg_query($conn,$logqry);
+		
+		if($loginsert)
+		{
+			echo "true";
+		}
+		else
+		{	echo "false";}
+  }
+?>

@@ -1,0 +1,22 @@
+#mainselection select {
+   border: 0;
+   color: #EEE;
+   background: transparent;
+   font-size: 18px;
+   /*font-weight: bold;*/
+   padding: 2px 10px;
+   /*width: 378px;*/
+   width: 170px;
+   background: #1f91f3;
+   /*-webkit-appearance: none;*/
+}
+
+#mainselection {
+   overflow:hidden;
+   width:170px;
+   -moz-border-radius: 5px 5px 5px 5px;
+   -webkit-border-radius: 5px 5px 5px 5px;
+   border-radius: 5px 5px 5px 5px;
+   /*box-shadow: 1px 1px 11px #330033;*/
+   background: #337ab7 url("../images/dropdown_arrow.png") no-repeat scroll 319px center;
+}

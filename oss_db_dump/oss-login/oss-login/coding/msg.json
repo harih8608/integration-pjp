@@ -1,0 +1,9 @@
+{
+"message":"Thanks for submitting CentOS alternate choice form. Update option also available in OSS Repository portal under 'OSS Stack' in the main menu.",
+"type":"chat",
+"title":"OSS Repository Portal Message",
+"category": "info",
+"created_on":1658120620,
+"priority":"medium",
+"receivers":["rajani@nic.in"]
+}

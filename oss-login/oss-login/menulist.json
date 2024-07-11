@@ -1,0 +1,13 @@
+{
+	"menuList": [
+		{
+			"id": "01",
+			"type": "About OTG",
+			"title": "About OTG",
+			"submenu1":"",
+			"href": "ossaboutOTG.php",
+			"tile":"bg-blue-grey",
+			"color":""
+		}		
+	]
+}
